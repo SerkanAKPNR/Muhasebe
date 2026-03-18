@@ -1,691 +1,619 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-  <title>Kişisel Muhasebe</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Kişisel Muhasebe</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#F7F6F2;font-family:'DM Sans',sans-serif;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;padding:20px 0;}
+input::-webkit-inner-spin-button{-webkit-appearance:none;}
+select{-webkit-appearance:none;appearance:none;}
+::-webkit-scrollbar{width:0;height:0;}
+@keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+#app{width:400px;max-width:100%;background:white;border-radius:28px;overflow:hidden;box-shadow:0 4px 40px rgba(0,0,0,0.08);position:relative;min-height:640px;display:flex;flex-direction:column;}
+
+/* Header */
+#header{padding:22px 20px 0;flex-shrink:0;}
+#header .date{font-size:11px;color:#bbb;letter-spacing:1px;text-transform:uppercase;}
+#header .title{font-size:22px;font-weight:700;color:#111;font-family:'DM Serif Display',serif;margin-top:3px;}
+#dots{position:absolute;top:22px;right:20px;display:flex;gap:5px;}
+.dot{height:6px;border-radius:3px;cursor:pointer;transition:all .3s;background:#ddd;}
+.dot.active{width:16px;background:#222;}
+.dot.inactive{width:6px;}
+
+/* Content */
+#content{flex:1;overflow-y:auto;padding-bottom:66px;}
+
+/* Bottom nav */
+#nav{position:absolute;bottom:0;left:0;right:0;height:60px;background:white;border-top:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-around;}
+.nav-btn{display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;cursor:pointer;padding:6px 20px;border-radius:14px;transition:all .2s;color:#bbb;font-family:'DM Sans',sans-serif;}
+.nav-btn.active{color:#222;}
+.nav-btn .icon{font-size:17px;transition:transform .2s;}
+.nav-btn.active .icon{transform:scale(1.2);}
+.nav-btn .lbl{font-size:10px;}
+.nav-btn.active .lbl{font-weight:600;}
+
+/* Ortak */
+.card{padding:10px 12px;border-radius:12px;background:#fafafa;border:1.5px solid transparent;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:space-between;}
+.card.selected{background:#f0f0ec;}
+.dot-color{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.panel{position:absolute;bottom:0;left:0;right:0;background:white;border-radius:20px 20px 0 0;padding:20px 16px 24px;box-shadow:0 -8px 40px rgba(0,0,0,0.12);animation:slideUp .3s ease;z-index:10;}
+.btn-primary{padding:8px;background:#222;color:white;border:none;border-radius:10px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;flex:1;}
+.btn-secondary{padding:8px;background:#eee;color:#555;border:none;border-radius:9px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;flex:1;}
+.btn-danger{padding:7px;background:#fee;border:none;border-radius:9px;font-size:12px;cursor:pointer;color:#E76F51;font-family:'DM Sans',sans-serif;flex:1;}
+.btn-close{background:#f4f4f4;border:none;border-radius:50%;width:30px;height:30px;font-size:17px;cursor:pointer;color:#555;display:flex;align-items:center;justify-content:center;}
+.inp{font-size:13px;padding:8px 10px;border-radius:9px;border:1px solid #ddd;outline:none;font-family:'DM Sans',sans-serif;width:100%;}
+.lbl-wrap{display:flex;flex-direction:column;gap:3px;}
+.lbl-wrap span{font-size:10px;color:#aaa;}
+.tag{font-size:10px;padding:1px 6px;border-radius:5px;background:#f0f0f0;color:#aaa;}
+.dashed-btn{width:100%;padding:11px;border:1.5px dashed #ccc;border-radius:12px;background:transparent;color:#888;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:10px;}
+
+/* SVG Donut */
+svg text{font-family:'DM Sans',sans-serif;}
+</style>
 </head>
 <body>
-  <div id="root"></div>
-  <script type="text/babel">
-const { useState, useRef, useEffect } = React;
+<div id="app">
+  <div id="header">
+    <div class="date">Mart 2026</div>
+    <div class="title" id="pageTitle">Finansal Özet</div>
+  </div>
+  <div id="dots">
+    <div class="dot active" onclick="goTab(0)"></div>
+    <div class="dot inactive" onclick="goTab(1)"></div>
+    <div class="dot inactive" onclick="goTab(2)"></div>
+  </div>
+  <div id="content"></div>
+  <div id="nav">
+    <button class="nav-btn active" onclick="goTab(0)"><span class="icon">◎</span><span class="lbl">Özet</span></button>
+    <button class="nav-btn" onclick="goTab(1)"><span class="icon">▦</span><span class="lbl">Giderler</span></button>
+    <button class="nav-btn" onclick="goTab(2)"><span class="icon">↻</span><span class="lbl">Ödemeler</span></button>
+  </div>
+</div>
 
-const PRESET_COLORS = ["#2D6A4F","#E76F51","#457B9D","#9B72CF","#E9C46A","#264653","#F4A261","#2A9D8F","#E63946","#6D6875"];
+<script>
+// ── Sabitler ──────────────────────────────────────────────────────────────
 const MONTHS = ["Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara","Oca","Şub","Mar"];
+const PRESET_COLORS = ["#2D6A4F","#E76F51","#457B9D","#9B72CF","#E9C46A","#264653","#F4A261","#2A9D8F","#E63946","#6D6875"];
+const ODEME_COLORS  = ["#E76F51","#457B9D","#9B72CF","#2A9D8F","#E9C46A","#264653","#F4A261","#E63946","#6D6875","#2D6A4F"];
+const GELIR_COLORS  = ["#1B4332","#2D6A4F","#40916C","#52B788","#74C69D","#95D5B2"];
+const AUTO_COLORS   = ["#E76F51","#457B9D","#9B72CF","#2A9D8F","#E9C46A","#264653","#F4A261","#E63946","#6D6875","#2D6A4F"];
 const KATEGORI_LIST = ["Kredi","Fatura","Abonelik","Kira","Diğer"];
-const KATEGORI_COLORS = {Kredi:"#E76F51",Fatura:"#E9C46A",Abonelik:"#9B72CF",Kira:"#457B9D","Diğer":"#aaa"};
-const TABS = [{key:"ozet",icon:"◎",label:"Özet"},{key:"giderler",icon:"▦",label:"Giderler"},{key:"odemeler",icon:"↻",label:"Ödemeler"}];
-const TITLES = {ozet:"Finansal Özet",giderler:"Aylık Giderler",odemeler:"Tekrar Eden Ödemeler"};
-const ODEME_COLORS = ["#E76F51","#457B9D","#9B72CF","#2A9D8F","#E9C46A","#264653","#F4A261","#E63946","#6D6875","#2D6A4F"];
-const GELIR_COLORS = ["#1B4332","#2D6A4F","#40916C","#52B788","#74C69D","#95D5B2"];
-const AUTO_COLORS  = ["#E76F51","#457B9D","#9B72CF","#2A9D8F","#E9C46A","#264653","#F4A261","#E63946","#6D6875","#2D6A4F"];
+const YONTEM_LIST   = ["Nakit","Kredi Kartı","Otomatik Ödeme","Havale/EFT"];
+const YONTEM_COLORS = {"Kredi Kartı":"#9B72CF","Nakit":"#2D6A4F","Otomatik Ödeme":"#457B9D","Havale/EFT":"#E9C46A"};
+const APP_VERSION   = "v5";
+const TITLES        = ["Finansal Özet","Aylık Giderler","Tekrar Eden Ödemeler"];
 
 let _id = 300;
-const uid = () => ++_id;
-const fmt = n => n.toLocaleString("tr-TR") + " ₺";
-const genM = (base, v) => Array.from({length:12}, (_,i) => Math.max(0, Math.round(base + Math.sin(i)*v*0.4 + (Math.random()-0.5)*v*0.6)));
-
-// ── Başlangıç Verileri ─────────────────────────────────────────────────────
-const INIT_ODEMELER = [
-  { id:"akbank",   label:"Akbank Kredisi",  kategori:"Kredi",    tutar:26000, taksit:18, gecen:0,  gun:5,  yontem:"Nakit"        },
-  { id:"konut",    label:"Konut Kredisi",   kategori:"Kredi",    tutar:42000, taksit:36, gecen:12, gun:3,  yontem:"Otomatik Ödeme"},
-  { id:"netflix",  label:"Netflix",         kategori:"Abonelik", tutar:120,   taksit:0,  gecen:0,  gun:15, yontem:"Kredi Kartı"   },
-  { id:"dogalgaz", label:"Doğalgaz",        kategori:"Fatura",   tutar:850,   taksit:0,  gecen:0,  gun:20, yontem:"Kredi Kartı"   },
-];
-
-const INIT_OZET_CATS = [
-  { key:"bakiye", label:"Mevcut Bakiye",     color:"#2D6A4F", items:[{id:uid(),label:"Vadesiz Hesap",amount:14500},{id:uid(),label:"Vadeli Mevduat",amount:7000},{id:uid(),label:"Nakit",amount:3000}]},
-  { key:"kredi",  label:"Kredi Kartı Borcu", color:"#E76F51", items:[{id:uid(),label:"Garanti Bankası",amount:4800},{id:uid(),label:"Yapı Kredi",amount:2100}]},
-  { key:"borc",   label:"Diğer Borçlar",     color:"#457B9D", items:[{id:uid(),label:"Fatura Borçları",amount:600}]},
-];
-
-const INIT_MANUEL_CATS = [];
-
-// ── Donut ──────────────────────────────────────────────────────────────────
-function DonutChart({ categories, selected, onSelect }) {
-  const totals = categories.map(c => c.items.reduce((a,b)=>a+b.amount,0));
-  const grand = totals.reduce((a,b)=>a+b,0)||1;
-  const cx=120,cy=120,r=90,inner=58,TAU=2*Math.PI;
-  let cum=0;
-  const slices = categories.map((cat,i)=>{
-    const frac=Math.max(totals[i]/grand,0.001);
-    const s=cum*TAU-Math.PI/2; cum+=frac; const e=cum*TAU-Math.PI/2;
-    const lg=frac>0.5?1:0;
-    const P=(a,rr)=>[cx+rr*Math.cos(a),cy+rr*Math.sin(a)];
-    const [x1,y1]=P(s,r),[x2,y2]=P(e,r),[ix1,iy1]=P(e,inner),[ix2,iy2]=P(s,inner);
-    return {key:cat.key,color:cat.color,d:`M${x1} ${y1} A${r} ${r} 0 ${lg} 1 ${x2} ${y2} L${ix1} ${iy1} A${inner} ${inner} 0 ${lg} 0 ${ix2} ${iy2}Z`};
-  });
-  const net=totals[0]-totals.slice(1).reduce((a,b)=>a+b,0);
-  return (
-    <svg viewBox="0 0 240 240" width="240" height="240" style={{display:"block",margin:"0 auto",cursor:"pointer"}}>
-      {slices.map(sl=>(
-        <path key={sl.key} d={sl.d} fill={sl.color} stroke="white" strokeWidth="2.5"
-          opacity={selected&&selected!==sl.key?0.28:1}
-          style={{transition:"opacity .3s,transform .3s",transformOrigin:"120px 120px",transform:selected===sl.key?"scale(1.06)":"scale(1)"}}
-          onClick={()=>onSelect(selected===sl.key?null:sl.key)}/>
-      ))}
-      <circle cx={cx} cy={cy} r={inner-2} fill="white"/>
-      <text x={cx} y={cy-10} textAnchor="middle" fontSize="11" fill="#aaa" fontFamily="'DM Sans',sans-serif">Net Durum</text>
-      <text x={cx} y={cy+13} textAnchor="middle" fontSize="13" fontWeight="700"
-        fill={net>=0?"#2D6A4F":"#E76F51"} fontFamily="'DM Sans',sans-serif">{fmt(net)}</text>
-    </svg>
-  );
-}
-
-// ── Düzenleme Paneli ───────────────────────────────────────────────────────
-function EditPanel({ cat, onSave, onClose }) {
-  const [localItems, setLocalItems] = useState(() => cat.items.map(it=>({...it})));
-  const updateLocal=(id,f,v)=>setLocalItems(items=>items.map(it=>it.id!==id?it:{...it,[f]:v}));
-  const handleSave=()=>{ onSave(localItems.map(it=>({...it,amount:Number(it.amount)||0}))); onClose(); };
-  return (
-    <div style={{position:"absolute",bottom:0,left:0,right:0,background:"white",borderRadius:"20px 20px 0 0",padding:"20px 16px 24px",boxShadow:"0 -8px 40px rgba(0,0,0,0.12)",animation:"slideUp .3s ease",zIndex:10}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-        <span style={{fontSize:14,fontWeight:600,color:"#222"}}>{cat.label}</span>
-        <button onClick={onClose} style={{background:"#f4f4f4",border:"none",borderRadius:"50%",width:30,height:30,fontSize:17,cursor:"pointer",color:"#555",display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
-      </div>
-      <div style={{display:"flex",flexDirection:"column",gap:7,maxHeight:200,overflowY:"auto"}}>
-        {localItems.map(it=>(
-          <div key={it.id} style={{display:"flex",gap:6,alignItems:"flex-end"}}>
-            <div style={{flex:2,display:"flex",flexDirection:"column",gap:3}}>
-              <span style={{fontSize:10,color:"#aaa",fontFamily:"'DM Sans',sans-serif"}}>Kalem Adı</span>
-              <input value={it.label} onChange={e=>updateLocal(it.id,"label",e.target.value)}
-                style={{fontSize:13,padding:"7px 8px",borderRadius:8,border:"1px solid #ddd",outline:"none",fontFamily:"'DM Sans',sans-serif"}}/>
-            </div>
-            <div style={{flex:1,display:"flex",flexDirection:"column",gap:3}}>
-              <span style={{fontSize:10,color:"#aaa",fontFamily:"'DM Sans',sans-serif"}}>Tutar (₺)</span>
-              <input type="number" value={it.amount===0?"":it.amount} onChange={e=>updateLocal(it.id,"amount",e.target.value)} placeholder="0"
-                style={{fontSize:13,padding:"7px 8px",borderRadius:8,border:"1px solid #ddd",outline:"none",fontFamily:"'DM Sans',sans-serif"}}/>
-            </div>
-            <button onClick={()=>setLocalItems(items=>items.filter(i=>i.id!==it.id))}
-              style={{background:"#fee",border:"none",borderRadius:7,padding:"7px 8px",color:"#E76F51",cursor:"pointer",fontSize:13,marginBottom:0}}>×</button>
-          </div>
-        ))}
-      </div>
-      <div style={{display:"flex",gap:8,marginTop:8}}>
-        <button onClick={()=>setLocalItems(items=>[...items,{id:uid(),label:"Yeni Kalem",amount:0}])}
-          style={{flex:1,padding:"8px",border:"1.5px dashed #ccc",borderRadius:10,background:"transparent",color:"#888",fontSize:13,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>+ Ekle</button>
-        <button onClick={handleSave}
-          style={{flex:1,padding:"8px",background:"#222",color:"white",border:"none",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:600}}>Kaydet</button>
-      </div>
-    </div>
-  );
-}
-
-// ── Özet Sekmesi ───────────────────────────────────────────────────────────
-function OzetTab({ ozetCats, setOzetCats }) {
-  const [selected, setSelected]   = useState(null);
-  const [editMode, setEditMode]   = useState(false);
-  const [addingCat, setAddingCat] = useState(false);
-  const [newLabel, setNewLabel]   = useState("");
-  const [newColor, setNewColor]   = useState(PRESET_COLORS[4]);
-  const selCat = ozetCats.find(c=>c.key===selected);
-
-  const saveItems=(ck,items)=>setOzetCats(cs=>cs.map(c=>c.key!==ck?c:{...c,items}));
-  const deleteCat=(ck)=>{setOzetCats(cs=>cs.filter(c=>c.key!==ck));if(selected===ck)setSelected(null);};
-  const addCategory=()=>{
-    if(!newLabel.trim())return;
-    setOzetCats(cs=>[...cs,{key:"cat_"+uid(),label:newLabel.trim(),color:newColor,items:[]}]);
-    setNewLabel("");setAddingCat(false);
-  };
-
-  return (
-    <div style={{position:"relative",minHeight:520}}>
-      <div style={{padding:"18px 0 4px"}}><DonutChart categories={ozetCats} selected={selected} onSelect={k=>!editMode&&setSelected(k)}/></div>
-      <div style={{padding:"4px 16px 8px",display:"flex",flexDirection:"column",gap:6}}>
-        {ozetCats.map(cat=>{
-          const total=cat.items.reduce((a,b)=>a+b.amount,0);
-          return (
-            <div key={cat.key} onClick={()=>!editMode&&setSelected(selected===cat.key?null:cat.key)}
-              style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 12px",borderRadius:12,
-                cursor:editMode?"default":"pointer",background:selected===cat.key?"#f0f0ec":"#fafafa",
-                border:selected===cat.key?`1.5px solid ${cat.color}`:"1.5px solid transparent",transition:"all .2s"}}>
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <div style={{width:9,height:9,borderRadius:"50%",background:cat.color,flexShrink:0}}/>
-                {editMode
-                  ?<input defaultValue={cat.label} onBlur={e=>setOzetCats(cs=>cs.map(c=>c.key!==cat.key?c:{...c,label:e.target.value}))}
-                    style={{fontSize:13,border:"none",borderBottom:"1px solid #ddd",background:"transparent",outline:"none",width:130,fontFamily:"'DM Sans',sans-serif"}}/>
-                  :<span style={{fontSize:13,color:"#444"}}>{cat.label}</span>}
-              </div>
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <span style={{fontSize:13,fontWeight:600,color:cat.color}}>{fmt(total)}</span>
-                {editMode&&<button onClick={()=>deleteCat(cat.key)} style={{background:"#fee",border:"none",borderRadius:6,padding:"2px 7px",color:"#E76F51",cursor:"pointer",fontSize:11}}>Sil</button>}
-              </div>
-            </div>
-          );
-        })}
-        {editMode&&!addingCat&&<button onClick={()=>setAddingCat(true)} style={{padding:"9px",border:"1.5px dashed #ccc",borderRadius:12,background:"transparent",color:"#888",fontSize:13,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>+ Yeni Kategori</button>}
-        {addingCat&&(
-          <div style={{display:"flex",flexDirection:"column",gap:8,padding:"12px",background:"#fafafa",borderRadius:12,border:"1.5px dashed #ccc"}}>
-            <input placeholder="Kategori adı" value={newLabel} onChange={e=>setNewLabel(e.target.value)} style={{fontSize:13,padding:"7px 10px",borderRadius:8,border:"1px solid #ddd",outline:"none",fontFamily:"'DM Sans',sans-serif"}}/>
-            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-              {PRESET_COLORS.map(c=><div key={c} onClick={()=>setNewColor(c)} style={{width:20,height:20,borderRadius:"50%",background:c,cursor:"pointer",outline:newColor===c?"2.5px solid #333":"none",outlineOffset:2}}/>)}
-            </div>
-            <div style={{display:"flex",gap:8}}>
-              <button onClick={addCategory} style={{flex:1,padding:"8px",background:"#222",color:"white",border:"none",borderRadius:9,fontSize:13,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Ekle</button>
-              <button onClick={()=>setAddingCat(false)} style={{flex:1,padding:"8px",background:"#eee",color:"#555",border:"none",borderRadius:9,fontSize:13,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>İptal</button>
-            </div>
-          </div>
-        )}
-      </div>
-      <div style={{textAlign:"center",paddingBottom:8}}>
-        <button onClick={()=>{setEditMode(e=>!e);setSelected(null);}} style={{fontSize:12,padding:"7px 20px",borderRadius:20,border:"1.5px solid #ddd",background:editMode?"#222":"white",color:editMode?"white":"#555",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",transition:"all .2s"}}>
-          {editMode?"✓ Bitti":"✎ Düzenle"}
-        </button>
-      </div>
-      {selected&&!editMode&&selCat&&(
-        <div style={{position:"absolute",bottom:0,left:0,right:0,background:"white",borderRadius:"20px 20px 0 0",padding:"20px 16px 24px",boxShadow:"0 -8px 40px rgba(0,0,0,0.12)",animation:"slideUp .3s ease",zIndex:10}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-            <div>
-              <div style={{fontSize:11,color:"#aaa"}}>{selCat.label}</div>
-              <div style={{fontSize:18,fontWeight:700,color:selCat.color,fontFamily:"'DM Serif Display',serif"}}>{fmt(selCat.items.reduce((a,b)=>a+b.amount,0))}</div>
-            </div>
-            <button onClick={()=>setSelected(null)} style={{background:"#f4f4f4",border:"none",borderRadius:"50%",width:30,height:30,fontSize:17,cursor:"pointer",color:"#555",display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
-          </div>
-          <div style={{display:"flex",flexDirection:"column",gap:7}}>
-            {selCat.items.map(it=>{
-              const c=it.autoColor||selCat.color;
-              return (
-                <div key={it.id} style={{display:"flex",justifyContent:"space-between",padding:"9px 12px",background:"#f9f9f9",borderRadius:10,borderLeft:`3px solid ${c}`}}>
-                  <span style={{fontSize:13,color:"#444"}}>{it.label}</span>
-                  <span style={{fontSize:13,fontWeight:600,color:c}}>{fmt(it.amount)}</span>
-                </div>
-              );
-            })}
-            <button onClick={()=>{setSelected(null);setEditMode(true);}} style={{padding:"8px",border:"1.5px dashed #ccc",borderRadius:10,background:"transparent",color:"#888",fontSize:12,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>✎ Düzenle</button>
-          </div>
-        </div>
-      )}
-      {editMode&&selected&&selCat&&(
-        <EditPanel key={selected} cat={selCat} onSave={(items)=>saveItems(selected,items)} onClose={()=>setSelected(null)}/>
-      )}
-    </div>
-  );
-}
-
-// ── Giderler Bar Chart ─────────────────────────────────────────────────────
-function BarChart({ cats, gelir, active, onSelect }) {
-  const containerRef = useRef(null);
-  const [width, setWidth] = useState(360);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const ro = new ResizeObserver(e => setWidth(e[0].contentRect.width));
-    ro.observe(containerRef.current);
-    return () => ro.disconnect();
-  }, []);
-
-  const GAP = 3;
-  const barW = Math.max(Math.floor((width - GAP * (MONTHS.length - 1)) / MONTHS.length), 4);
-  const CHART_H = 220;
-  const LABEL_H = 16;
-  const H = CHART_H + LABEL_H;
-
-  const monthlyTotals = MONTHS.map((_, mi) => cats.reduce((s,c) => s+(c.monthly[mi]||0), 0));
-  const maxVal = Math.max(gelir, ...monthlyTotals, 1);
-
-  return (
-    <div ref={containerRef} style={{width:"100%"}}>
-      <svg width={width} height={H} style={{display:"block"}}>
-        {[0.25,0.5,0.75,1].map(t=>(
-          <line key={t} x1={0} x2={width} y1={CHART_H*(1-t)} y2={CHART_H*(1-t)} stroke="#f4f4f4" strokeWidth="1"/>
-        ))}
-        {MONTHS.map((month,mi)=>{
-          const x = mi*(barW+GAP);
-          const totalGider = monthlyTotals[mi];
-          const kalan = Math.max(gelir-totalGider, 0);
-          const gelirH = (gelir/maxVal)*CHART_H;
-          const kalanH = (kalan/maxVal)*CHART_H;
-
-          // Giderleri büyükten küçüğe sırala, alttan yukarı yığ
-          const sorted = [...cats]
-            .map(c=>({...c,val:c.monthly[mi]||0}))
-            .filter(c=>c.val>0)
-            .sort((a,b)=>b.val-a.val);
-
-          let stackY = CHART_H;
-          return (
-            <g key={month}>
-              {sorted.map((c,ri)=>{
-                const h=(c.val/maxVal)*CHART_H;
-                const y=stackY-h;
-                stackY-=h;
-                return (
-                  <rect key={c.id} x={x} y={y} width={barW} height={Math.max(h,0.5)}
-                    fill={c.color} rx={ri===sorted.length-1?2:0}
-                    opacity={active&&active!==c.id?0.15:1}
-                    style={{cursor:"pointer",transition:"opacity .2s"}}
-                    onClick={()=>onSelect(active===c.id?null:c.id)}/>
-                );
-              })}
-              {/* Kalan (net) yeşil dilim — giderlerin üstüne */}
-              {kalanH>0.5&&(
-                <rect x={x} y={CHART_H-gelirH} width={barW} height={kalanH}
-                  fill="#1B4332" rx={2} opacity={0.9}
-                  style={{pointerEvents:"none"}}/>
-              )}
-              <text x={x+barW/2} y={H-2} textAnchor="middle" fontSize="8" fill="#ccc">{month}</text>
-            </g>
-          );
-        })}
-      </svg>
-    </div>
-  );
-}
-
-// ── Giderler Sekmesi ───────────────────────────────────────────────────────
-function GiderlerTab({ manuelCats, setManuelCats, odemeler, gelirKalemler, setGelirKalemler }) {
-  const [active, setActive]         = useState(null);
-  const [editMode, setEditMode]     = useState(false);
-  const [editCatId, setEditCatId]   = useState(null);
-  const [addingCat, setAddingCat]   = useState(false);
-  const [newLabel, setNewLabel]     = useState("");
-  const [newColor, setNewColor]     = useState(PRESET_COLORS[0]);
-  const [gelirAcik, setGelirAcik]   = useState(false);
-
-  const toplamGelir = gelirKalemler.reduce((a,k)=>a+k.amount,0);
-
-  const odemeKats = odemeler.map((o,i)=>({
-    id:"od_"+o.id, label:o.label, color:ODEME_COLORS[i%ODEME_COLORS.length],
-    monthly:Array(12).fill(o.tutar), fromOdeme:true,
-  }));
-  const allCats = [...odemeKats,...manuelCats];
-  const activeCat = allCats.find(c=>c.id===active);
-  const editCat   = manuelCats.find(c=>c.id===editCatId);
-
-  const updateMonthly=(id,mi,val)=>setManuelCats(cs=>cs.map(c=>c.id!==id?c:{...c,monthly:c.monthly.map((v,i)=>i===mi?Number(val)||0:v)}));
-  const deleteCat=(id)=>{setManuelCats(cs=>cs.filter(c=>c.id!==id));if(active===id)setActive(null);};
-  const addCat=()=>{
-    if(!newLabel.trim())return;
-    setManuelCats(cs=>[...cs,{id:"mc_"+uid(),label:newLabel.trim(),color:newColor,monthly:Array(12).fill(0)}]);
-    setNewLabel("");setAddingCat(false);
-  };
-
-  return (
-    <div style={{padding:"12px 14px 10px"}}>
-      {/* Gelir bölümü */}
-      <div style={{background:"#f0faf4",borderRadius:12,marginBottom:12,border:"1.5px solid #b7e4c7",overflow:"hidden"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px"}}
-          onClick={()=>setGelirAcik(a=>!a)}>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <div style={{width:9,height:9,borderRadius:"50%",background:"#1B4332"}}/>
-            <span style={{fontSize:13,color:"#1B4332",fontWeight:600}}>Toplam Gelir</span>
-          </div>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <span style={{fontSize:13,fontWeight:700,color:"#1B4332"}}>{fmt(toplamGelir)}</span>
-            <span style={{fontSize:12,color:"#aaa"}}>{gelirAcik?"▲":"▼"}</span>
-          </div>
-        </div>
-
-        {gelirAcik&&(
-          <div onClick={e=>e.stopPropagation()} style={{padding:"0 14px 12px",display:"flex",flexDirection:"column",gap:8,borderTop:"1px solid #d8f0e4"}}>
-            {gelirKalemler.map((k,i)=>(
-              <div key={k.id} style={{display:"flex",flexDirection:"column",gap:4,padding:"10px",background:"white",borderRadius:10,border:`1.5px solid ${GELIR_COLORS[i%GELIR_COLORS.length]}44`,borderLeft:`3px solid ${GELIR_COLORS[i%GELIR_COLORS.length]}`}}>
-                <div style={{display:"flex",gap:6}}>
-                  <div style={{flex:2,display:"flex",flexDirection:"column",gap:3}}>
-                    <span style={{fontSize:10,color:"#aaa"}}>Gelir Adı</span>
-                    <input value={k.label} onChange={e=>setGelirKalemler(gs=>gs.map(g=>g.id!==k.id?g:{...g,label:e.target.value}))}
-                      style={{fontSize:13,padding:"7px 9px",borderRadius:8,border:"1px solid #ddd",outline:"none",background:"#fafafa",fontFamily:"'DM Sans',sans-serif"}}/>
-                  </div>
-                  <div style={{flex:1,display:"flex",flexDirection:"column",gap:3}}>
-                    <span style={{fontSize:10,color:"#aaa"}}>Tutar (₺)</span>
-                    <input type="number" value={k.amount===0?"":k.amount}
-                      onChange={e=>setGelirKalemler(gs=>gs.map(g=>g.id!==k.id?g:{...g,amount:Number(e.target.value)||0}))}
-                      placeholder="0"
-                      style={{fontSize:13,padding:"7px 9px",borderRadius:8,border:"1px solid #ddd",outline:"none",background:"#fafafa",fontFamily:"'DM Sans',sans-serif"}}/>
-                  </div>
-                </div>
-                <button onClick={e=>{e.stopPropagation();setGelirKalemler(gs=>gs.filter(g=>g.id!==k.id));}}
-                  style={{alignSelf:"flex-end",background:"#fee",border:"none",borderRadius:7,padding:"5px 12px",color:"#E76F51",cursor:"pointer",fontSize:12,fontFamily:"'DM Sans',sans-serif"}}>
-                  Sil
-                </button>
-              </div>
-            ))}
-            <div style={{display:"flex",gap:7,marginTop:2}}>
-              <button onClick={()=>setGelirKalemler(gs=>[...gs,{id:uid(),label:"Yeni Gelir",amount:0}])}
-                style={{flex:1,padding:"8px",border:"1.5px dashed #b7e4c7",borderRadius:9,background:"transparent",color:"#2D6A4F",fontSize:12,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
-                + Ekle
-              </button>
-              <button onClick={()=>setGelirAcik(false)}
-                style={{flex:1,padding:"8px",background:"#1B4332",color:"white",border:"none",borderRadius:9,fontSize:12,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:600}}>
-                ✓ Bitti
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Bar chart — tam genişlik */}
-      <BarChart cats={allCats} gelir={toplamGelir} active={active} onSelect={setActive}/>
-
-      {/* Legend */}
-      <div style={{display:"flex",flexWrap:"wrap",gap:"6px 12px",margin:"10px 0 4px"}}>
-        {/* Gelir açıklaması */}
-        <div style={{display:"flex",alignItems:"center",gap:5}}>
-          <div style={{width:9,height:9,borderRadius:"50%",background:"#1B4332"}}/>
-          <span style={{fontSize:11,color:"#1B4332",fontWeight:600}}>Kalan</span>
-        </div>
-        {allCats.map(cat=>(
-          <div key={cat.id} style={{display:"flex",alignItems:"center",gap:5}}>
-            <div onClick={()=>!editMode&&setActive(active===cat.id?null:cat.id)}
-              style={{display:"flex",alignItems:"center",gap:5,cursor:editMode?"default":"pointer",
-                opacity:active&&active!==cat.id?0.3:1,transition:"opacity .2s"}}>
-              <div style={{width:9,height:9,borderRadius:"50%",background:cat.color,flexShrink:0}}/>
-              <span style={{fontSize:11,color:"#555"}}>{cat.label}</span>
-            </div>
-            {editMode&&!cat.fromOdeme&&(
-              <div style={{display:"flex",gap:3,marginLeft:2}}>
-                <button onClick={()=>setEditCatId(editCatId===cat.id?null:cat.id)} style={{background:"#f0f0f0",border:"none",borderRadius:5,padding:"1px 5px",fontSize:10,color:"#555",cursor:"pointer"}}>✎</button>
-                <button onClick={()=>deleteCat(cat.id)} style={{background:"#fee",border:"none",borderRadius:5,padding:"1px 5px",fontSize:10,color:"#E76F51",cursor:"pointer"}}>×</button>
-              </div>
-            )}
-            {editMode&&cat.fromOdeme&&<span style={{fontSize:9,color:"#ccc"}}>(otomatik)</span>}
-          </div>
-        ))}
-        {editMode&&!addingCat&&<button onClick={()=>setAddingCat(true)} style={{fontSize:11,padding:"2px 8px",border:"1px dashed #ccc",borderRadius:8,background:"transparent",color:"#888",cursor:"pointer"}}>+ Ekle</button>}
-      </div>
-
-      {addingCat&&(
-        <div style={{padding:"10px",background:"#fafafa",borderRadius:12,border:"1.5px dashed #ccc",marginBottom:8}}>
-          <input placeholder="Kategori adı" value={newLabel} onChange={e=>setNewLabel(e.target.value)} style={{width:"100%",fontSize:13,padding:"6px 9px",borderRadius:8,border:"1px solid #ddd",outline:"none",marginBottom:7,fontFamily:"'DM Sans',sans-serif"}}/>
-          <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:7}}>
-            {PRESET_COLORS.map(c=><div key={c} onClick={()=>setNewColor(c)} style={{width:18,height:18,borderRadius:"50%",background:c,cursor:"pointer",outline:newColor===c?"2px solid #333":"none",outlineOffset:2}}/>)}
-          </div>
-          <div style={{display:"flex",gap:7}}>
-            <button onClick={addCat} style={{flex:1,padding:"7px",background:"#222",color:"white",border:"none",borderRadius:8,fontSize:12,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Ekle</button>
-            <button onClick={()=>setAddingCat(false)} style={{flex:1,padding:"7px",background:"#eee",color:"#555",border:"none",borderRadius:8,fontSize:12,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>İptal</button>
-          </div>
-        </div>
-      )}
-
-      {editMode&&editCat&&(
-        <div style={{padding:"12px",background:"#fafafa",borderRadius:12,borderLeft:`3px solid ${editCat.color}`,marginBottom:8,animation:"slideUp .2s ease"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-            <span style={{fontSize:13,fontWeight:600,color:editCat.color}}>{editCat.label}</span>
-            <button onClick={()=>setEditCatId(null)} style={{background:"#eee",border:"none",borderRadius:"50%",width:24,height:24,fontSize:14,cursor:"pointer",color:"#777",display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
-          </div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:5}}>
-            {MONTHS.map((m,mi)=>(
-              <div key={m} style={{display:"flex",flexDirection:"column",gap:2}}>
-                <span style={{fontSize:9,color:"#aaa"}}>{m}</span>
-                <input type="number" value={editCat.monthly[mi]} onChange={e=>updateMonthly(editCat.id,mi,e.target.value)}
-                  style={{fontSize:12,padding:"5px 6px",borderRadius:7,border:"1px solid #ddd",outline:"none",fontFamily:"'DM Sans',sans-serif"}}/>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div style={{textAlign:"center",marginTop:8}}>
-        <button onClick={()=>{setEditMode(e=>!e);setActive(null);setEditCatId(null);}} style={{fontSize:12,padding:"7px 20px",borderRadius:20,border:"1.5px solid #ddd",background:editMode?"#222":"white",color:editMode?"white":"#555",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",transition:"all .2s"}}>
-          {editMode?"✓ Bitti":"✎ Düzenle"}
-        </button>
-      </div>
-
-      {!editMode&&activeCat&&(
-        <div style={{marginTop:10,padding:"14px",background:"#fafafa",borderRadius:14,borderLeft:`3px solid ${activeCat.color}`,animation:"slideUp .25s ease"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-            <div>
-              <div style={{fontSize:11,color:"#aaa"}}>Kategori</div>
-              <div style={{fontSize:16,fontWeight:700,color:activeCat.color,fontFamily:"'DM Serif Display',serif"}}>{activeCat.label}</div>
-            </div>
-            <button onClick={()=>setActive(null)} style={{background:"#eee",border:"none",borderRadius:"50%",width:27,height:27,fontSize:15,cursor:"pointer",color:"#777",display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
-          </div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:5}}>
-            {MONTHS.map((month,mi)=>(
-              <div key={month} style={{textAlign:"center",padding:"7px 3px",background:"white",borderRadius:8,border:"1px solid #eee"}}>
-                <div style={{fontSize:9,color:"#bbb",marginBottom:2}}>{month}</div>
-                <div style={{fontSize:11,fontWeight:600,color:"#333"}}>{activeCat.monthly[mi].toLocaleString("tr-TR")}₺</div>
-              </div>
-            ))}
-          </div>
-          <div style={{marginTop:9,display:"flex",justifyContent:"space-between",fontSize:12,color:"#888"}}>
-            <span>Aylık ort.: <b style={{color:"#333"}}>{fmt(Math.round(activeCat.monthly.reduce((a,b)=>a+b,0)/12))}</b></span>
-            <span>Yıllık: <b style={{color:"#333"}}>{fmt(activeCat.monthly.reduce((a,b)=>a+b,0))}</b></span>
-          </div>
-        </div>
-      )}
-      {!editMode&&!active&&<div style={{textAlign:"center",fontSize:11,color:"#ccc",marginTop:6}}>Detay için bir renge dokun</div>}
-    </div>
-  );
-}
-
-// ── Etiketli Input ─────────────────────────────────────────────────────────
-function LInput({ label, value, onChange, type="text", flex }) {
-  return (
-    <div style={{display:"flex",flexDirection:"column",gap:3,flex:flex||"unset"}}>
-      <span style={{fontSize:10,color:"#aaa",fontFamily:"'DM Sans',sans-serif"}}>{label}</span>
-      <input type={type} value={type==="number"&&value===0?"":value} onChange={onChange} placeholder={type==="number"?"0":""}
-        style={{fontSize:13,padding:"8px 10px",borderRadius:9,border:"1px solid #ddd",outline:"none",fontFamily:"'DM Sans',sans-serif",width:"100%"}}/>
-    </div>
-  );
-}
-
-// ── Ödeme Formu (paylaşımlı) ───────────────────────────────────────────────
-function OdemeForm({ initial, title, onSave, onCancel }) {
-  const [form, setForm] = useState(initial);
-  const s = (k) => e => setForm(f=>({...f,[k]:e.target.value}));
-  return (
-    <div style={{padding:"14px",background:"#fafafa",borderRadius:14,border:"1.5px dashed #ddd",marginBottom:10,animation:"slideUp .2s ease"}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-        <span style={{fontSize:14,fontWeight:600,color:"#222"}}>{title}</span>
-        <button onClick={onCancel} style={{background:"#eee",border:"none",borderRadius:"50%",width:28,height:28,fontSize:16,cursor:"pointer",color:"#777",display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
-      </div>
-      <div style={{display:"flex",flexDirection:"column",gap:10}}>
-        <LInput label="Ödeme Adı" value={form.label} onChange={s("label")}/>
-        <div style={{display:"flex",gap:7}}>
-          <div style={{display:"flex",flexDirection:"column",gap:3,flex:1}}>
-            <span style={{fontSize:10,color:"#aaa",fontFamily:"'DM Sans',sans-serif"}}>Kategori</span>
-            <select value={form.kategori} onChange={s("kategori")} style={{fontSize:13,padding:"8px 10px",borderRadius:9,border:"1px solid #ddd",outline:"none",background:"white",fontFamily:"'DM Sans',sans-serif"}}>
-              {KATEGORI_LIST.map(k=><option key={k}>{k}</option>)}
-            </select>
-          </div>
-          <LInput label="Ödeme Günü" value={form.gun} onChange={s("gun")} type="number" flex={1}/>
-        </div>
-        <LInput label="Tutar (₺)" value={form.tutar} onChange={s("tutar")} type="number"/>
-        <div style={{display:"flex",gap:7}}>
-          <LInput label="Toplam Taksit (0 = süresiz)" value={form.taksit} onChange={s("taksit")} type="number" flex={1}/>
-          <LInput label="Geçen Taksit" value={form.gecen} onChange={s("gecen")} type="number" flex={1}/>
-        </div>
-        <div style={{display:"flex",flexDirection:"column",gap:3}}>
-          <span style={{fontSize:10,color:"#aaa",fontFamily:"'DM Sans',sans-serif"}}>Ödeme Yöntemi</span>
-          <select value={form.yontem||"Nakit"} onChange={s("yontem")} style={{fontSize:13,padding:"8px 10px",borderRadius:9,border:"1px solid #ddd",outline:"none",background:"white",fontFamily:"'DM Sans',sans-serif"}}>
-            {YONTEM_LIST.map(y=><option key={y}>{y}</option>)}
-          </select>
-        </div>
-        <button onClick={()=>onSave(form)} style={{padding:"10px",background:"#222",color:"white",border:"none",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:600}}>Kaydet</button>
-      </div>
-    </div>
-  );
-}
-
-const YONTEM_LIST = ["Nakit","Kredi Kartı","Otomatik Ödeme","Havale/EFT"];
-const YONTEM_COLORS = {"Kredi Kartı":"#9B72CF","Nakit":"#2D6A4F","Otomatik Ödeme":"#457B9D","Havale/EFT":"#E9C46A"};
-
-const EMPTY_FORM = {label:"",kategori:"Kredi",tutar:"",taksit:"",gecen:"",gun:"",yontem:"Nakit"};
-const OdemeFormPanel    = ({title,onSave,onCancel})  => <OdemeForm initial={EMPTY_FORM} title={title} onSave={onSave} onCancel={onCancel}/>;
-const OdemeDuzenlePanel = ({odeme,onSave,onCancel})  => <OdemeForm initial={{label:odeme.label,kategori:odeme.kategori,tutar:odeme.tutar,taksit:odeme.taksit,gecen:odeme.gecen,gun:odeme.gun,yontem:odeme.yontem||"Nakit"}} title="Ödemeyi Düzenle" onSave={onSave} onCancel={onCancel}/>;
-
-// ── Ödemeler Sekmesi ───────────────────────────────────────────────────────
-function OdemelerTab({ odemeler, setOdemeler }) {
-  const [selected, setSelected] = useState(null);
-  const [adding, setAdding]     = useState(false);
-  const [editing, setEditing]   = useState(null);
-  const emptyForm = {label:"",kategori:"Kredi",tutar:"",taksit:"",gecen:"",gun:""};
-  const [form, setForm] = useState(emptyForm);
-
-  const saveNew=(form)=>{
-    if(!form.label||!form.tutar)return;
-    setOdemeler(os=>[...os,{id:"o_"+uid(),label:form.label,kategori:form.kategori,tutar:Number(form.tutar),taksit:Number(form.taksit)||0,gecen:Number(form.gecen)||0,gun:Number(form.gun)||1}]);
-    setAdding(false);
-  };
-  const saveEdit=(form)=>{
-    setOdemeler(os=>os.map(o=>o.id!==editing?o:{...o,...form,tutar:Number(form.tutar),taksit:Number(form.taksit)||0,gecen:Number(form.gecen)||0,gun:Number(form.gun)||1}));
-    setEditing(null);
-  };
-  const startEdit=(o)=>{setEditing(o.id);setSelected(null);};
-  const deleteOdeme=(id)=>{setOdemeler(os=>os.filter(o=>o.id!==id));if(selected===id)setSelected(null);};
-
-  return (
-    <div style={{padding:"14px 14px 10px"}}>
-      {adding&&<OdemeFormPanel title="Yeni Ödeme" onSave={saveNew} onCancel={()=>setAdding(false)}/>}
-      {editing&&<OdemeDuzenlePanel odeme={odemeler.find(o=>o.id===editing)} onSave={saveEdit} onCancel={()=>setEditing(null)}/>}
-      <div style={{display:"flex",flexDirection:"column",gap:8}}>
-        {odemeler.map((o,i)=>{
-          const color=ODEME_COLORS[i%ODEME_COLORS.length];
-          const hasTaksit=o.taksit>0;
-          const progress=hasTaksit?o.gecen/o.taksit:0;
-          const kalan=hasTaksit?o.taksit-o.gecen:null;
-          const isSelected=selected===o.id;
-          return (
-            <div key={o.id}>
-              <div onClick={()=>setSelected(isSelected?null:o.id)}
-                style={{padding:"12px 14px",borderRadius:14,background:isSelected?"#f5f5f2":"#fafafa",
-                  border:isSelected?`1.5px solid ${color}`:"1.5px solid transparent",cursor:"pointer",transition:"all .2s"}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:isSelected&&hasTaksit?8:0}}>
-                  <div>
-                    <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:3}}>
-                      <div style={{width:8,height:8,borderRadius:"50%",background:color,flexShrink:0}}/>
-                      <span style={{fontSize:14,fontWeight:600,color:"#222"}}>{o.label}</span>
-                    </div>
-                    <div style={{display:"flex",gap:5,marginLeft:15,flexWrap:"wrap"}}>
-                      <span style={{fontSize:10,color:"#aaa",background:"#f0f0f0",padding:"1px 6px",borderRadius:5}}>{o.kategori}</span>
-                      <span style={{fontSize:10,color:"#aaa"}}>Her ayın <b style={{color:"#555"}}>{o.gun}.</b> günü</span>
-                      <span style={{fontSize:10,padding:"1px 6px",borderRadius:5,background:YONTEM_COLORS[o.yontem||"Nakit"]+"22",color:YONTEM_COLORS[o.yontem||"Nakit"],fontWeight:600}}>{o.yontem||"Nakit"}</span>
-                    </div>
-                  </div>
-                  <div style={{textAlign:"right"}}>
-                    <div style={{fontSize:15,fontWeight:700,color}}>{fmt(o.tutar)}</div>
-                    {hasTaksit&&<div style={{fontSize:10,color:"#aaa"}}>{o.gecen}/{o.taksit} taksit</div>}
-                  </div>
-                </div>
-                {isSelected&&hasTaksit&&(
-                  <div style={{animation:"slideUp .2s ease"}}>
-                    <div style={{height:7,background:"#eee",borderRadius:10,overflow:"hidden",marginBottom:5}}>
-                      <div style={{height:"100%",width:`${Math.min(progress*100,100)}%`,background:color,borderRadius:10,transition:"width .5s ease"}}/>
-                    </div>
-                    <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#aaa"}}>
-                      <span>Ödenen: <b style={{color:"#333"}}>{fmt(Math.round(o.tutar/o.taksit*o.gecen))}</b></span>
-                      <span>Kalan: <b style={{color}}>{kalan} taksit</b> ({fmt(Math.round(o.tutar/o.taksit*kalan))})</span>
-                    </div>
-                  </div>
-                )}
-                {isSelected&&!hasTaksit&&<div style={{fontSize:11,color:"#aaa",marginTop:4}}>Süresiz / tekrar eden ödeme</div>}
-              </div>
-              {isSelected&&(
-                <div style={{display:"flex",gap:7,marginTop:4,padding:"0 2px"}}>
-                  <button onClick={()=>startEdit(o)} style={{flex:1,padding:"7px",background:"white",border:"1px solid #ddd",borderRadius:9,fontSize:12,cursor:"pointer",color:"#444",fontFamily:"'DM Sans',sans-serif"}}>✎ Düzenle</button>
-                  <button onClick={()=>deleteOdeme(o.id)} style={{flex:1,padding:"7px",background:"#fee",border:"none",borderRadius:9,fontSize:12,cursor:"pointer",color:"#E76F51",fontFamily:"'DM Sans',sans-serif"}}>Sil</button>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      {!adding&&!editing&&(
-        <button onClick={()=>{setAdding(true);setSelected(null);}} style={{marginTop:10,width:"100%",padding:"11px",border:"1.5px dashed #ccc",borderRadius:12,background:"transparent",color:"#888",fontSize:13,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
-          + Yeni Ödeme Ekle
-        </button>
-      )}
-    </div>
-  );
-}
-
-// ── Ana App ────────────────────────────────────────────────────────────────
-const APP_VERSION = "v4";
-const LS = {
-  get: (key, def) => { try { const v=localStorage.getItem(APP_VERSION+"_"+key); return v?JSON.parse(v):def; } catch(e){return def;} },
-  set: (key, val) => { try { localStorage.setItem(APP_VERSION+"_"+key, JSON.stringify(val)); } catch(e){} }
+const uid  = () => ++_id;
+const fmt  = n => Number(n).toLocaleString("tr-TR") + " ₺";
+const LS   = {
+  get:(k,d)=>{try{const v=localStorage.getItem(APP_VERSION+"_"+k);return v?JSON.parse(v):d;}catch(e){return d;}},
+  set:(k,v)=>{try{localStorage.setItem(APP_VERSION+"_"+k,JSON.stringify(v));}catch(e){}}
 };
 
-function App() {
-  const [tabIdx, setTabIdx]           = useState(0);
-  const [ozetCats, setOzetCats]       = useState(()=>LS.get("ozetCats", INIT_OZET_CATS));
-  const [manuelCats, setManuelCats]   = useState(()=>LS.get("manuelCats", INIT_MANUEL_CATS));
-  const [odemeler, setOdemeler]       = useState(()=>LS.get("odemeler", INIT_ODEMELER));
-  const [gelirKalemler, setGelirKalemler] = useState(()=>LS.get("gelirKalemler", [{id:uid(),label:"Maaş",amount:130000}]));
-  const touchStart = useRef(null);
+// ── State ─────────────────────────────────────────────────────────────────
+let state = {
+  tab: 0,
+  ozetCats: LS.get("ozetCats",[
+    {key:"bakiye",label:"Mevcut Bakiye",color:"#2D6A4F",items:[{id:uid(),label:"Vadesiz Hesap",amount:14500},{id:uid(),label:"Vadeli Mevduat",amount:7000},{id:uid(),label:"Nakit",amount:3000}]},
+    {key:"kredi", label:"Kredi Kartı Borcu",color:"#E76F51",items:[{id:uid(),label:"Garanti Bankası",amount:4800},{id:uid(),label:"Yapı Kredi",amount:2100}]},
+    {key:"borc",  label:"Diğer Borçlar",color:"#457B9D",items:[{id:uid(),label:"Fatura Borçları",amount:600}]},
+  ]),
+  manuelCats: LS.get("manuelCats",[]),
+  odemeler: LS.get("odemeler",[
+    {id:"akbank",  label:"Akbank Kredisi", kategori:"Kredi",   tutar:26000,taksit:18,gecen:0, gun:5, yontem:"Nakit"},
+    {id:"konut",   label:"Konut Kredisi",  kategori:"Kredi",   tutar:42000,taksit:36,gecen:12,gun:3, yontem:"Otomatik Ödeme"},
+    {id:"netflix", label:"Netflix",        kategori:"Abonelik",tutar:120,  taksit:0, gecen:0, gun:15,yontem:"Kredi Kartı"},
+    {id:"dogalgaz",label:"Doğalgaz",       kategori:"Fatura",  tutar:850,  taksit:0, gecen:0, gun:20,yontem:"Kredi Kartı"},
+  ]),
+  gelirKalemler: LS.get("gelirKalemler",[{id:uid(),label:"Maaş",amount:130000}]),
+  // UI state
+  ozetSelected: null,
+  ozetEditMode: false,
+  ozetEditCat: null,
+  giderActive: null,
+  giderEditMode: false,
+  giderEditCatId: null,
+  giderGelirAcik: false,
+  odemeSelected: null,
+  odemeAdding: false,
+  odemeEditing: null,
+};
 
-  // Her değişiklikte localStorage'a kaydet
-  useEffect(()=>{ LS.set("ozetCats", ozetCats); }, [ozetCats]);
-  useEffect(()=>{ LS.set("manuelCats", manuelCats); }, [manuelCats]);
-  useEffect(()=>{ LS.set("odemeler", odemeler); }, [odemeler]);
-  useEffect(()=>{ LS.set("gelirKalemler", gelirKalemler); }, [gelirKalemler]);
+function save(){
+  LS.set("ozetCats",state.ozetCats);
+  LS.set("manuelCats",state.manuelCats);
+  LS.set("odemeler",state.odemeler);
+  LS.set("gelirKalemler",state.gelirKalemler);
+}
 
-  let autoColorIdx = 0;
-  const enrichedOzetCats = ozetCats.map(cat => {
-    if (cat.key === "borc") {
-      const auto = odemeler.filter(o=>o.kategori==="Kredi").map(o=>({id:"auto_"+o.id,label:o.label,amount:o.tutar,auto:true,autoColor:AUTO_COLORS[autoColorIdx++%AUTO_COLORS.length]}));
+function setState(patch){
+  Object.assign(state,patch);
+  render();
+}
+
+// ── Hesaplamalar ──────────────────────────────────────────────────────────
+function enrichedOzetCats(){
+  let idx=0;
+  return state.ozetCats.map(cat=>{
+    if(cat.key==="borc"){
+      const auto=state.odemeler.filter(o=>o.kategori==="Kredi").map(o=>({id:"auto_"+o.id,label:o.label,amount:o.tutar,auto:true,autoColor:AUTO_COLORS[idx++%AUTO_COLORS.length]}));
       return {...cat,items:[...cat.items.filter(it=>!it.auto),...auto]};
     }
-    if (cat.key === "kredi") {
-      // Kredi kartıyla ödenen kalemler otomatik eklenir
-      const auto = odemeler.filter(o=>o.yontem==="Kredi Kartı").map(o=>({id:"auto_"+o.id,label:o.label+" (Kredi Kartı)",amount:o.tutar,auto:true,autoColor:YONTEM_COLORS["Kredi Kartı"]}));
+    if(cat.key==="kredi"){
+      const auto=state.odemeler.filter(o=>o.yontem==="Kredi Kartı").map(o=>({id:"auto_"+o.id,label:o.label+" (K.Kartı)",amount:o.tutar,auto:true,autoColor:YONTEM_COLORS["Kredi Kartı"]}));
       return {...cat,items:[...cat.items.filter(it=>!it.auto),...auto]};
     }
     return cat;
   });
-
-  const onTouchStart = e => { touchStart.current = e.touches[0].clientX; };
-  const onTouchEnd   = e => {
-    if(touchStart.current===null)return;
-    const diff = touchStart.current - e.changedTouches[0].clientX;
-    if(Math.abs(diff)>50) setTabIdx(i=>diff>0?Math.min(i+1,2):Math.max(i-1,0));
-    touchStart.current=null;
-  };
-
-  return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap');
-        @keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
-        *{box-sizing:border-box;margin:0;padding:0;}
-        input::-webkit-inner-spin-button{-webkit-appearance:none;}
-        select{-webkit-appearance:none;appearance:none;}
-        ::-webkit-scrollbar{width:0;height:0;}
-      `}</style>
-      <div style={{minHeight:"100vh",background:"#F7F6F2",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'DM Sans',sans-serif"}}>
-        <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
-          style={{width:400,maxWidth:"100%",background:"white",borderRadius:28,overflow:"hidden",
-            boxShadow:"0 4px 40px rgba(0,0,0,0.08)",position:"relative",minHeight:640,display:"flex",flexDirection:"column",userSelect:"none"}}>
-
-          <div style={{padding:"22px 20px 0"}}>
-            <div style={{fontSize:11,color:"#bbb",letterSpacing:1,textTransform:"uppercase"}}>Mart 2026</div>
-            <div style={{fontSize:22,fontWeight:700,color:"#111",fontFamily:"'DM Serif Display',serif",marginTop:3}}>{TITLES[TABS[tabIdx].key]}</div>
-          </div>
-
-          <div style={{position:"absolute",top:22,right:20,display:"flex",gap:5}}>
-            {TABS.map((_,i)=>(
-              <div key={i} onClick={()=>setTabIdx(i)}
-                style={{width:i===tabIdx?16:6,height:6,borderRadius:3,background:i===tabIdx?"#222":"#ddd",cursor:"pointer",transition:"all .3s"}}/>
-            ))}
-          </div>
-
-          <div style={{flex:1,overflowY:"auto",paddingBottom:66}}>
-            {tabIdx===0&&<OzetTab ozetCats={enrichedOzetCats} setOzetCats={setOzetCats}/>}
-            {tabIdx===1&&<GiderlerTab manuelCats={manuelCats} setManuelCats={setManuelCats} odemeler={odemeler} gelirKalemler={gelirKalemler} setGelirKalemler={setGelirKalemler}/>}
-            {tabIdx===2&&<OdemelerTab odemeler={odemeler} setOdemeler={setOdemeler}/>}
-          </div>
-
-          <div style={{position:"absolute",bottom:0,left:0,right:0,height:60,background:"white",borderTop:"1px solid #f0f0f0",display:"flex",alignItems:"center",justifyContent:"space-around"}}>
-            {TABS.map((t,i)=>(
-              <button key={t.key} onClick={()=>setTabIdx(i)}
-                style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,background:"none",border:"none",cursor:"pointer",
-                  padding:"6px 20px",borderRadius:14,color:tabIdx===i?"#222":"#bbb",fontFamily:"'DM Sans',sans-serif",transition:"all .2s"}}>
-                <span style={{fontSize:17,transition:"transform .2s",transform:tabIdx===i?"scale(1.2)":"scale(1)"}}>{t.icon}</span>
-                <span style={{fontSize:10,fontWeight:tabIdx===i?600:400}}>{t.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    </>
-  );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-  </script>
+function allGiderCats(){
+  const odemeKats=state.odemeler.map((o,i)=>({
+    id:"od_"+o.id,label:o.label,color:ODEME_COLORS[i%ODEME_COLORS.length],
+    monthly:Array(12).fill(o.tutar),fromOdeme:true,
+  }));
+  return [...odemeKats,...state.manuelCats];
+}
+
+// ── Navigasyon ────────────────────────────────────────────────────────────
+function goTab(t){
+  state.tab=t;
+  state.ozetSelected=null;
+  state.ozetEditMode=false;
+  state.ozetEditCat=null;
+  state.giderActive=null;
+  state.odemeSelected=null;
+  state.odemeAdding=false;
+  state.odemeEditing=null;
+  render();
+}
+
+// ── SVG Donut ─────────────────────────────────────────────────────────────
+function donutSVG(cats,selected){
+  const totals=cats.map(c=>c.items.reduce((a,b)=>a+b.amount,0));
+  const grand=totals.reduce((a,b)=>a+b,0)||1;
+  const cx=120,cy=120,r=90,inner=58,TAU=2*Math.PI;
+  let cum=0;
+  let paths="";
+  cats.forEach((cat,i)=>{
+    const frac=Math.max(totals[i]/grand,0.001);
+    const s=cum*TAU-Math.PI/2; cum+=frac; const e=cum*TAU-Math.PI/2;
+    const lg=frac>0.5?1:0;
+    const x1=cx+r*Math.cos(s),y1=cy+r*Math.sin(s);
+    const x2=cx+r*Math.cos(e),y2=cy+r*Math.sin(e);
+    const ix1=cx+inner*Math.cos(e),iy1=cy+inner*Math.sin(e);
+    const ix2=cx+inner*Math.cos(s),iy2=cy+inner*Math.sin(s);
+    const d=`M${x1} ${y1} A${r} ${r} 0 ${lg} 1 ${x2} ${y2} L${ix1} ${iy1} A${inner} ${inner} 0 ${lg} 0 ${ix2} ${iy2}Z`;
+    const op=selected&&selected!==cat.key?0.28:1;
+    const sc=selected===cat.key?"scale(1.06)":"scale(1)";
+    paths+=`<path d="${d}" fill="${cat.color}" stroke="white" stroke-width="2.5" opacity="${op}" style="cursor:pointer;transform:${sc};transform-origin:120px 120px;transition:opacity .3s,transform .3s" onclick="ozetClickSlice('${cat.key}')"/>`;
+  });
+  const net=totals[0]-totals.slice(1).reduce((a,b)=>a+b,0);
+  const netColor=net>=0?"#2D6A4F":"#E76F51";
+  return `<svg viewBox="0 0 240 240" width="240" height="240" style="display:block;margin:0 auto;cursor:pointer">
+    ${paths}
+    <circle cx="${cx}" cy="${cy}" r="${inner-2}" fill="white"/>
+    <text x="${cx}" y="${cy-10}" text-anchor="middle" font-size="11" fill="#aaa">Net Durum</text>
+    <text x="${cx}" y="${cy+13}" text-anchor="middle" font-size="13" font-weight="700" fill="${netColor}">${fmt(net)}</text>
+  </svg>`;
+}
+
+// ── Bar Chart ─────────────────────────────────────────────────────────────
+function barChartSVG(cats,gelir,active){
+  const W=368,CHART_H=220,LABEL_H=16,H=CHART_H+LABEL_H;
+  const GAP=3,barW=Math.max(Math.floor((W-GAP*(MONTHS.length-1))/MONTHS.length),4);
+  const monthlyTotals=MONTHS.map((_,mi)=>cats.reduce((s,c)=>s+(c.monthly[mi]||0),0));
+  const maxVal=Math.max(gelir,...monthlyTotals,1);
+  let lines="",bars="",labels="";
+  [0.25,0.5,0.75,1].forEach(t=>{
+    lines+=`<line x1="0" x2="${W}" y1="${CHART_H*(1-t)}" y2="${CHART_H*(1-t)}" stroke="#f4f4f4" stroke-width="1"/>`;
+  });
+  MONTHS.forEach((month,mi)=>{
+    const x=mi*(barW+GAP);
+    const totalGider=monthlyTotals[mi];
+    const kalan=Math.max(gelir-totalGider,0);
+    const gelirH=(gelir/maxVal)*CHART_H;
+    const kalanH=(kalan/maxVal)*CHART_H;
+    const sorted=[...cats].map(c=>({...c,val:c.monthly[mi]||0})).filter(c=>c.val>0).sort((a,b)=>b.val-a.val);
+    let stackY=CHART_H;
+    sorted.forEach((c,ri)=>{
+      const h=(c.val/maxVal)*CHART_H;
+      const y=stackY-h;
+      stackY-=h;
+      const op=active&&active!==c.id?0.15:1;
+      bars+=`<rect x="${x}" y="${y}" width="${barW}" height="${Math.max(h,0.5)}" fill="${c.color}" rx="${ri===sorted.length-1?2:0}" opacity="${op}" style="cursor:pointer;transition:opacity .2s" onclick="giderClick('${c.id}')"/>`;
+    });
+    if(kalanH>0.5) bars+=`<rect x="${x}" y="${CHART_H-gelirH}" width="${barW}" height="${kalanH}" fill="#1B4332" rx="2" opacity="0.9" style="pointer-events:none"/>`;
+    labels+=`<text x="${x+barW/2}" y="${H-2}" text-anchor="middle" font-size="8" fill="#ccc">${month}</text>`;
+  });
+  return `<svg width="${W}" height="${H}" style="display:block;width:100%">${lines}${bars}${labels}</svg>`;
+}
+
+// ── Render ────────────────────────────────────────────────────────────────
+function render(){
+  document.getElementById("pageTitle").textContent=TITLES[state.tab];
+  document.querySelectorAll(".nav-btn").forEach((b,i)=>b.classList.toggle("active",i===state.tab));
+  document.querySelectorAll(".dot").forEach((d,i)=>{d.className="dot "+(i===state.tab?"active":"inactive");});
+  const c=document.getElementById("content");
+  if(state.tab===0) c.innerHTML=renderOzet();
+  else if(state.tab===1) c.innerHTML=renderGiderler();
+  else c.innerHTML=renderOdemeler();
+}
+
+// ── ÖZET SEKMESİ ──────────────────────────────────────────────────────────
+function renderOzet(){
+  const cats=enrichedOzetCats();
+  let html=`<div style="padding:18px 0 4px">${donutSVG(cats,state.ozetSelected)}</div>`;
+  html+=`<div style="padding:4px 16px 8px;display:flex;flex-direction:column;gap:6px">`;
+  cats.forEach(cat=>{
+    const total=cat.items.reduce((a,b)=>a+b.amount,0);
+    const sel=state.ozetSelected===cat.key;
+    html+=`<div class="card ${sel?"selected":""}" style="border-color:${sel?cat.color:"transparent"}" onclick="ozetClickCard('${cat.key}')">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="dot-color" style="background:${cat.color}"></div>
+        ${state.ozetEditMode
+          ? `<input value="${cat.label}" onblur="ozetRenamecat('${cat.key}',this.value)" onclick="event.stopPropagation()" style="font-size:13px;border:none;border-bottom:1px solid #ddd;background:transparent;outline:none;width:130px;font-family:'DM Sans',sans-serif"/>`
+          : `<span style="font-size:13px;color:#444">${cat.label}</span>`}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:13px;font-weight:600;color:${cat.color}">${fmt(total)}</span>
+        ${state.ozetEditMode?`<button onclick="ozetDelCat('${cat.key}');event.stopPropagation()" style="background:#fee;border:none;border-radius:6px;padding:2px 7px;color:#E76F51;cursor:pointer;font-size:11px">Sil</button>`:""}
+      </div>
+    </div>`;
+  });
+
+  if(state.ozetEditMode){
+    html+=`<button onclick="ozetAddCatForm()" style="padding:9px;border:1.5px dashed #ccc;border-radius:12px;background:transparent;color:#888;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;width:100%">+ Yeni Kategori</button>`;
+  }
+  html+=`</div>`;
+  html+=`<div style="text-align:center;padding-bottom:8px">
+    <button onclick="toggleOzetEdit()" style="font-size:12px;padding:7px 20px;border-radius:20px;border:1.5px solid #ddd;background:${state.ozetEditMode?"#222":"white"};color:${state.ozetEditMode?"white":"#555"};cursor:pointer;font-family:'DM Sans',sans-serif">
+      ${state.ozetEditMode?"✓ Bitti":"✎ Düzenle"}
+    </button>
+  </div>`;
+  html+=`<div id="ozetPanel"></div>`;
+
+  // Detay/düzenleme paneli
+  if(state.ozetSelected&&!state.ozetEditMode){
+    const cat=cats.find(c=>c.key===state.ozetSelected);
+    if(cat){
+      let items="";
+      cat.items.forEach(it=>{
+        const c=it.autoColor||cat.color;
+        items+=`<div style="display:flex;justify-content:space-between;padding:9px 12px;background:#f9f9f9;border-radius:10px;border-left:3px solid ${c}">
+          <span style="font-size:13px;color:#444">${it.label}</span>
+          <span style="font-size:13px;font-weight:600;color:${c}">${fmt(it.amount)}</span>
+        </div>`;
+      });
+      html+=`<div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div><div style="font-size:11px;color:#aaa">${cat.label}</div>
+          <div style="font-size:18px;font-weight:700;color:${cat.color};font-family:'DM Serif Display',serif">${fmt(cat.items.reduce((a,b)=>a+b.amount,0))}</div></div>
+          <button class="btn-close" onclick="setState({ozetSelected:null})">×</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:7px">${items}</div>
+        <button onclick="setState({ozetSelected:null,ozetEditMode:true,ozetEditCat:'${cat.key}'})" style="margin-top:8px;padding:8px;border:1.5px dashed #ccc;border-radius:10px;background:transparent;color:#888;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;width:100%">✎ Düzenle</button>
+      </div>`;
+    }
+  }
+
+  if(state.ozetEditMode&&state.ozetEditCat){
+    const cat=state.ozetCats.find(c=>c.key===state.ozetEditCat);
+    if(cat){
+      let rows="";
+      cat.items.filter(it=>!it.auto).forEach(it=>{
+        rows+=`<div style="display:flex;gap:6px;align-items:flex-end">
+          <div class="lbl-wrap" style="flex:2"><span>Kalem Adı</span><input class="inp" value="${it.label}" onchange="ozetUpdateItem('${cat.key}','${it.id}','label',this.value)"/></div>
+          <div class="lbl-wrap" style="flex:1"><span>Tutar (₺)</span><input class="inp" type="number" value="${it.amount||""}" placeholder="0" onchange="ozetUpdateItem('${cat.key}','${it.id}','amount',this.value)"/></div>
+          <button onclick="ozetDelItem('${cat.key}','${it.id}')" style="background:#fee;border:none;border-radius:7px;padding:7px 8px;color:#E76F51;cursor:pointer;font-size:13px;margin-bottom:1px">×</button>
+        </div>`;
+      });
+      html+=`<div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <span style="font-size:14px;font-weight:600;color:#222">${cat.label}</span>
+          <button class="btn-close" onclick="setState({ozetEditCat:null})">×</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:7px;max-height:200px;overflow-y:auto">${rows}</div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button onclick="ozetAddItem('${cat.key}')" style="flex:1;padding:8px;border:1.5px dashed #ccc;border-radius:10px;background:transparent;color:#888;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">+ Ekle</button>
+          <button class="btn-primary" onclick="setState({ozetEditCat:null})">Kaydet</button>
+        </div>
+      </div>`;
+    }
+  }
+
+  return html;
+}
+
+function ozetClickSlice(key){ if(!state.ozetEditMode) setState({ozetSelected:state.ozetSelected===key?null:key,ozetEditCat:null}); }
+function ozetClickCard(key){ if(!state.ozetEditMode) setState({ozetSelected:state.ozetSelected===key?null:key,ozetEditCat:null}); }
+function toggleOzetEdit(){ setState({ozetEditMode:!state.ozetEditMode,ozetSelected:null,ozetEditCat:null}); }
+function ozetRenamecat(key,val){ state.ozetCats=state.ozetCats.map(c=>c.key!==key?c:{...c,label:val}); save(); render(); }
+function ozetDelCat(key){ state.ozetCats=state.ozetCats.filter(c=>c.key!==key); if(state.ozetSelected===key)state.ozetSelected=null; save(); render(); }
+function ozetUpdateItem(catKey,id,field,val){ state.ozetCats=state.ozetCats.map(c=>c.key!==catKey?c:{...c,items:c.items.map(it=>it.id!==id?it:{...it,[field]:field==="amount"?Number(val)||0:val})}); save(); render(); }
+function ozetDelItem(catKey,id){ state.ozetCats=state.ozetCats.map(c=>c.key!==catKey?c:{...c,items:c.items.filter(it=>it.id!==id)}); save(); render(); }
+function ozetAddItem(catKey){ state.ozetCats=state.ozetCats.map(c=>c.key!==catKey?c:{...c,items:[...c.items,{id:uid(),label:"Yeni Kalem",amount:0}]}); save(); render(); }
+function ozetAddCatForm(){
+  const key="cat_"+uid();
+  const label=prompt("Kategori adı:");
+  if(!label)return;
+  state.ozetCats=[...state.ozetCats,{key,label:label.trim(),color:PRESET_COLORS[state.ozetCats.length%PRESET_COLORS.length],items:[]}];
+  save(); render();
+}
+
+// ── GİDERLER SEKMESİ ──────────────────────────────────────────────────────
+function renderGiderler(){
+  const cats=allGiderCats();
+  const toplamGelir=state.gelirKalemler.reduce((a,k)=>a+k.amount,0);
+  let html=`<div style="padding:12px 14px 10px">`;
+
+  // Gelir bölümü
+  html+=`<div style="background:#f0faf4;border-radius:12px;margin-bottom:12px;border:1.5px solid #b7e4c7;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer" onclick="toggleGelir()">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:9px;height:9px;border-radius:50%;background:#1B4332"></div>
+        <span style="font-size:13px;color:#1B4332;font-weight:600">Toplam Gelir</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:13px;font-weight:700;color:#1B4332">${fmt(toplamGelir)}</span>
+        <span style="font-size:12px;color:#aaa">${state.giderGelirAcik?"▲":"▼"}</span>
+      </div>
+    </div>`;
+
+  if(state.giderGelirAcik){
+    html+=`<div onclick="event.stopPropagation()" style="padding:0 14px 12px;display:flex;flex-direction:column;gap:8px;border-top:1px solid #d8f0e4">`;
+    state.gelirKalemler.forEach((k,i)=>{
+      const c=GELIR_COLORS[i%GELIR_COLORS.length];
+      html+=`<div style="display:flex;flex-direction:column;gap:4px;padding:10px;background:white;border-radius:10px;border:1.5px solid ${c}44;border-left:3px solid ${c}">
+        <div style="display:flex;gap:6px">
+          <div class="lbl-wrap" style="flex:2"><span>Gelir Adı</span><input class="inp" value="${k.label}" onchange="gelirUpdateLabel('${k.id}',this.value)" style="border:1px solid #ddd;background:#fafafa"/></div>
+          <div class="lbl-wrap" style="flex:1"><span>Tutar (₺)</span><input class="inp" type="number" value="${k.amount||""}" placeholder="0" onchange="gelirUpdateAmount('${k.id}',this.value)" style="border:1px solid #ddd;background:#fafafa"/></div>
+        </div>
+        <button onclick="gelirDel('${k.id}');event.stopPropagation()" style="align-self:flex-end;background:#fee;border:none;border-radius:7px;padding:5px 12px;color:#E76F51;cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif">Sil</button>
+      </div>`;
+    });
+    html+=`<div style="display:flex;gap:7px;margin-top:2px">
+      <button onclick="gelirAdd()" style="flex:1;padding:8px;border:1.5px dashed #b7e4c7;border-radius:9px;background:transparent;color:#2D6A4F;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">+ Ekle</button>
+      <button onclick="toggleGelir()" style="flex:1;padding:8px;background:#1B4332;color:white;border:none;border-radius:9px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600">✓ Bitti</button>
+    </div></div>`;
+  }
+  html+=`</div>`;
+
+  // Bar chart
+  html+=`<div style="width:100%">${barChartSVG(cats,toplamGelir,state.giderActive)}</div>`;
+
+  // Legend
+  html+=`<div style="display:flex;flex-wrap:wrap;gap:6px 12px;margin:10px 0 4px">
+    <div style="display:flex;align-items:center;gap:5px"><div style="width:9px;height:9px;border-radius:50%;background:#1B4332"></div><span style="font-size:11px;color:#1B4332;font-weight:600">Kalan</span></div>`;
+  cats.forEach(cat=>{
+    const op=state.giderActive&&state.giderActive!==cat.id?0.3:1;
+    html+=`<div style="display:flex;align-items:center;gap:5px;opacity:${op};cursor:pointer" onclick="giderClick('${cat.id}')">
+      <div style="width:9px;height:9px;border-radius:50%;background:${cat.color}"></div>
+      <span style="font-size:11px;color:#555">${cat.label}</span>
+      ${state.giderEditMode&&!cat.fromOdeme?`<button onclick="giderDelCat('${cat.id}');event.stopPropagation()" style="background:#fee;border:none;border-radius:5px;padding:1px 5px;font-size:10px;color:#E76F51;cursor:pointer">×</button>`:""}
+      ${state.giderEditMode&&cat.fromOdeme?`<span style="font-size:9px;color:#ccc">(otomatik)</span>`:""}
+    </div>`;
+  });
+  if(state.giderEditMode) html+=`<button onclick="giderAddCatForm()" style="font-size:11px;padding:2px 8px;border:1px dashed #ccc;border-radius:8px;background:transparent;color:#888;cursor:pointer">+ Ekle</button>`;
+  html+=`</div>`;
+
+  // Aylık düzenleme
+  if(state.giderEditMode&&state.giderEditCatId){
+    const cat=state.manuelCats.find(c=>c.id===state.giderEditCatId);
+    if(cat){
+      let grid="";
+      MONTHS.forEach((m,mi)=>{
+        grid+=`<div style="display:flex;flex-direction:column;gap:2px">
+          <span style="font-size:9px;color:#aaa">${m}</span>
+          <input type="number" class="inp" value="${cat.monthly[mi]||""}" placeholder="0" onchange="giderUpdateMonthly('${cat.id}',${mi},this.value)" style="padding:5px 6px;font-size:12px;border-radius:7px"/>
+        </div>`;
+      });
+      html+=`<div style="padding:12px;background:#fafafa;border-radius:12px;border-left:3px solid ${cat.color};margin-bottom:8px;animation:slideUp .2s ease">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-size:13px;font-weight:600;color:${cat.color}">${cat.label}</span>
+          <button class="btn-close" style="width:24px;height:24px;font-size:14px" onclick="setState({giderEditCatId:null})">×</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px">${grid}</div>
+      </div>`;
+    }
+  }
+
+  html+=`<div style="text-align:center;margin-top:8px">
+    <button onclick="toggleGiderEdit()" style="font-size:12px;padding:7px 20px;border-radius:20px;border:1.5px solid #ddd;background:${state.giderEditMode?"#222":"white"};color:${state.giderEditMode?"white":"#555"};cursor:pointer;font-family:'DM Sans',sans-serif">
+      ${state.giderEditMode?"✓ Bitti":"✎ Düzenle"}
+    </button>
+  </div>`;
+
+  // Detay paneli
+  if(!state.giderEditMode&&state.giderActive){
+    const cat=allGiderCats().find(c=>c.id===state.giderActive);
+    if(cat){
+      let grid="";
+      MONTHS.forEach((month,mi)=>{
+        grid+=`<div style="text-align:center;padding:7px 3px;background:white;border-radius:8px;border:1px solid #eee">
+          <div style="font-size:9px;color:#bbb;margin-bottom:2px">${month}</div>
+          <div style="font-size:11px;font-weight:600;color:#333">${(cat.monthly[mi]||0).toLocaleString("tr-TR")}₺</div>
+        </div>`;
+      });
+      const yillik=cat.monthly.reduce((a,b)=>a+b,0);
+      const aylik=Math.round(yillik/12);
+      html+=`<div style="margin-top:10px;padding:14px;background:#fafafa;border-radius:14px;border-left:3px solid ${cat.color};animation:slideUp .25s ease">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div><div style="font-size:11px;color:#aaa">Kategori</div>
+          <div style="font-size:16px;font-weight:700;color:${cat.color};font-family:'DM Serif Display',serif">${cat.label}</div></div>
+          <button class="btn-close" style="width:27px;height:27px;font-size:15px" onclick="setState({giderActive:null})">×</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px">${grid}</div>
+        <div style="margin-top:9px;display:flex;justify-content:space-between;font-size:12px;color:#888">
+          <span>Aylık ort.: <b style="color:#333">${fmt(aylik)}</b></span>
+          <span>Yıllık: <b style="color:#333">${fmt(yillik)}</b></span>
+        </div>
+      </div>`;
+    }
+  }
+
+  html+=`</div>`;
+  return html;
+}
+
+function toggleGelir(){ setState({giderGelirAcik:!state.giderGelirAcik}); }
+function gelirUpdateLabel(id,val){ state.gelirKalemler=state.gelirKalemler.map(g=>g.id!==id?g:{...g,label:val}); save(); render(); }
+function gelirUpdateAmount(id,val){ state.gelirKalemler=state.gelirKalemler.map(g=>g.id!==id?g:{...g,amount:Number(val)||0}); save(); render(); }
+function gelirDel(id){ state.gelirKalemler=state.gelirKalemler.filter(g=>g.id!==id); save(); render(); }
+function gelirAdd(){ state.gelirKalemler=[...state.gelirKalemler,{id:uid(),label:"Yeni Gelir",amount:0}]; save(); render(); }
+function giderClick(id){ setState({giderActive:state.giderActive===id?null:id}); }
+function toggleGiderEdit(){ setState({giderEditMode:!state.giderEditMode,giderActive:null,giderEditCatId:null}); }
+function giderDelCat(id){ state.manuelCats=state.manuelCats.filter(c=>c.id!==id); if(state.giderActive===id)state.giderActive=null; save(); render(); }
+function giderUpdateMonthly(id,mi,val){ state.manuelCats=state.manuelCats.map(c=>c.id!==id?c:{...c,monthly:c.monthly.map((v,i)=>i===mi?Number(val)||0:v)}); save(); render(); }
+function giderAddCatForm(){
+  const label=prompt("Kategori adı:");
+  if(!label)return;
+  state.manuelCats=[...state.manuelCats,{id:"mc_"+uid(),label:label.trim(),color:PRESET_COLORS[state.manuelCats.length%PRESET_COLORS.length],monthly:Array(12).fill(0)}];
+  save(); render();
+}
+
+// ── ÖDEMELER SEKMESİ ──────────────────────────────────────────────────────
+function renderOdemeler(){
+  let html=`<div style="padding:14px 14px 10px">`;
+
+  if(state.odemeAdding){
+    html+=odemeFormHTML("Yeni Ödeme",{label:"",kategori:"Kredi",tutar:"",taksit:"",gecen:"",gun:"",yontem:"Nakit"},"odemeFormSave","setState({odemeAdding:false})");
+  }
+  if(state.odemeEditing){
+    const o=state.odemeler.find(x=>x.id===state.odemeEditing);
+    if(o) html+=odemeFormHTML("Ödemeyi Düzenle",o,"odemeEditSave","setState({odemeEditing:null})");
+  }
+
+  state.odemeler.forEach((o,i)=>{
+    const color=ODEME_COLORS[i%ODEME_COLORS.length];
+    const hasTaksit=o.taksit>0;
+    const progress=hasTaksit?o.gecen/o.taksit:0;
+    const kalan=hasTaksit?o.taksit-o.gecen:null;
+    const sel=state.odemeSelected===o.id;
+    const yontemColor=YONTEM_COLORS[o.yontem||"Nakit"]||"#aaa";
+
+    html+=`<div style="margin-bottom:8px">
+      <div style="padding:12px 14px;border-radius:14px;background:${sel?"#f5f5f2":"#fafafa"};border:1.5px solid ${sel?color:"transparent"};cursor:pointer;transition:all .2s" onclick="odemeSelect('${o.id}')">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:${sel&&hasTaksit?8:0}px">
+          <div>
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">
+              <div style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0"></div>
+              <span style="font-size:14px;font-weight:600;color:#222">${o.label}</span>
+            </div>
+            <div style="display:flex;gap:5px;margin-left:15px;flex-wrap:wrap">
+              <span class="tag">${o.kategori}</span>
+              <span style="font-size:10px;color:#aaa">Her ayın <b style="color:#555">${o.gun}.</b> günü</span>
+              <span style="font-size:10px;padding:1px 6px;border-radius:5px;background:${yontemColor}22;color:${yontemColor};font-weight:600">${o.yontem||"Nakit"}</span>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:15px;font-weight:700;color:${color}">${fmt(o.tutar)}</div>
+            ${hasTaksit?`<div style="font-size:10px;color:#aaa">${o.gecen}/${o.taksit} taksit</div>`:""}
+          </div>
+        </div>`;
+
+    if(sel&&hasTaksit){
+      html+=`<div style="animation:slideUp .2s ease">
+        <div style="height:7px;background:#eee;border-radius:10px;overflow:hidden;margin-bottom:5px">
+          <div style="height:100%;width:${Math.min(progress*100,100)}%;background:${color};border-radius:10px;transition:width .5s ease"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:#aaa">
+          <span>Ödenen: <b style="color:#333">${fmt(Math.round(o.tutar/o.taksit*o.gecen))}</b></span>
+          <span>Kalan: <b style="color:${color}">${kalan} taksit</b> (${fmt(Math.round(o.tutar/o.taksit*kalan))})</span>
+        </div>
+      </div>`;
+    }
+    if(sel&&!hasTaksit) html+=`<div style="font-size:11px;color:#aaa;margin-top:4px">Süresiz / tekrar eden ödeme</div>`;
+    html+=`</div>`;
+
+    if(sel){
+      html+=`<div style="display:flex;gap:7px;margin-top:4px;padding:0 2px">
+        <button class="btn-secondary" onclick="odemeStartEdit('${o.id}')">✎ Düzenle</button>
+        <button class="btn-danger" onclick="odemeDel('${o.id}')">Sil</button>
+      </div>`;
+    }
+    html+=`</div>`;
+  });
+
+  if(!state.odemeAdding&&!state.odemeEditing){
+    html+=`<button class="dashed-btn" onclick="setState({odemeAdding:true,odemeSelected:null})">+ Yeni Ödeme Ekle</button>`;
+  }
+  html+=`</div>`;
+  return html;
+}
+
+function odemeFormHTML(title,o,saveFn,cancelFn){
+  const kategoriOpts=KATEGORI_LIST.map(k=>`<option value="${k}"${o.kategori===k?" selected":""}>${k}</option>`).join("");
+  const yontemOpts=YONTEM_LIST.map(y=>`<option value="${y}"${(o.yontem||"Nakit")===y?" selected":""}>${y}</option>`).join("");
+  return `<div style="padding:14px;background:#fafafa;border-radius:14px;border:1.5px dashed #ddd;margin-bottom:10px;animation:slideUp .2s ease" id="odemeForm">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <span style="font-size:14px;font-weight:600;color:#222">${title}</span>
+      <button class="btn-close" onclick="${cancelFn}">×</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="lbl-wrap"><span>Ödeme Adı</span><input class="inp" id="of_label" value="${o.label}" placeholder="Ödeme adı"/></div>
+      <div style="display:flex;gap:7px">
+        <div class="lbl-wrap" style="flex:1"><span>Kategori</span><select class="inp" id="of_kategori">${kategoriOpts}</select></div>
+        <div class="lbl-wrap" style="flex:1"><span>Ödeme Günü</span><input class="inp" id="of_gun" type="number" value="${o.gun||""}" placeholder="0"/></div>
+      </div>
+      <div class="lbl-wrap"><span>Tutar (₺)</span><input class="inp" id="of_tutar" type="number" value="${o.tutar||""}" placeholder="0"/></div>
+      <div style="display:flex;gap:7px">
+        <div class="lbl-wrap" style="flex:1"><span>Toplam Taksit (0=süresiz)</span><input class="inp" id="of_taksit" type="number" value="${o.taksit||""}" placeholder="0"/></div>
+        <div class="lbl-wrap" style="flex:1"><span>Geçen Taksit</span><input class="inp" id="of_gecen" type="number" value="${o.gecen||""}" placeholder="0"/></div>
+      </div>
+      <div class="lbl-wrap"><span>Ödeme Yöntemi</span><select class="inp" id="of_yontem">${yontemOpts}</select></div>
+      <button class="btn-primary" onclick="${saveFn}()">Kaydet</button>
+    </div>
+  </div>`;
+}
+
+function odemeFormData(){
+  return {
+    label: document.getElementById("of_label").value,
+    kategori: document.getElementById("of_kategori").value,
+    gun: Number(document.getElementById("of_gun").value)||1,
+    tutar: Number(document.getElementById("of_tutar").value)||0,
+    taksit: Number(document.getElementById("of_taksit").value)||0,
+    gecen: Number(document.getElementById("of_gecen").value)||0,
+    yontem: document.getElementById("of_yontem").value,
+  };
+}
+
+function odemeFormSave(){
+  const d=odemeFormData();
+  if(!d.label||!d.tutar)return;
+  state.odemeler=[...state.odemeler,{id:"o_"+uid(),...d}];
+  state.odemeAdding=false;
+  save(); render();
+}
+function odemeEditSave(){
+  const d=odemeFormData();
+  state.odemeler=state.odemeler.map(o=>o.id!==state.odemeEditing?o:{...o,...d});
+  state.odemeEditing=null;
+  save(); render();
+}
+function odemeSelect(id){ setState({odemeSelected:state.odemeSelected===id?null:id}); }
+function odemeStartEdit(id){ setState({odemeEditing:id,odemeSelected:null,odemeAdding:false}); }
+function odemeDel(id){ state.odemeler=state.odemeler.filter(o=>o.id!==id); if(state.odemeSelected===id)state.odemeSelected=null; save(); render(); }
+
+// ── Swipe ─────────────────────────────────────────────────────────────────
+let touchX=null;
+document.addEventListener("touchstart",e=>{touchX=e.touches[0].clientX;});
+document.addEventListener("touchend",e=>{
+  if(touchX===null)return;
+  const diff=touchX-e.changedTouches[0].clientX;
+  if(Math.abs(diff)>50) goTab(diff>0?Math.min(state.tab+1,2):Math.max(state.tab-1,0));
+  touchX=null;
+});
+
+// ── Başlat ────────────────────────────────────────────────────────────────
+render();
+</script>
 </body>
 </html>
